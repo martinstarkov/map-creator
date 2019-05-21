@@ -1,5 +1,5 @@
 # map-creator
-Turn your .png files into tilemap data arrays that can be used for easy 2D platformer level creation!
+Turn your .png files into tilemap data arrays for easy 2D level creation!
 
 # How to compile
 In order to use the program, it must first be compiled using pyinstaller. Here is a step-by-step guide for beginners:
