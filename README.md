@@ -37,6 +37,6 @@ The ```example_dictionary.xlsm``` provided in this repository contains a macro t
 ![exampleSmall](https://user-images.githubusercontent.com/5933654/58112557-736cdc80-7bfc-11e9-9225-4daacf5f23b6.png)
 
 ## Example output file (zoomed to see numbers)
-![exampleBig](https://user-images.githubusercontent.com/5933654/58112554-736cdc80-7bfc-11e9-8c1f-b3f02b3772f5.png)
+![exampleBig](https://user-images.githubusercontent.com/5933654/59223404-827bf480-8bd4-11e9-90e2-79cace288c82.png)
 
 As seen above, the program has done its job in converting the image into an array of numbers that can be processed by a game's tilemap code. 
