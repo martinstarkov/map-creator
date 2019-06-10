@@ -20,38 +20,38 @@ hexDictionary = {
 }
 
 #if a value is above 9, turn it into a hex character
-def hexify(number):
-    if number > 9:
-        return hexDictionary.get(number)
+def hexify(number_):
+    if number_ > 9:
+        return hexDictionary.get(number_)
     else:
-        return str(int(number))
+        return str(int(number_))
 
 #find the hex value of an individual (r,g,b) value
-def makeHex(number):
-    return hexify(m.floor(number / 16)) + hexify((number / 16 - m.floor(number / 16)) * 16)    
+def makeHex(number_):
+    return hexify(m.floor(number_ / 16)) + hexify((number_ / 16 - m.floor(number_ / 16)) * 16)    
 
 #stitch the (r,g,b) hex values into one hex code
-def rgbToHex(rgbTuple):
-    return "#{0:2}{1:2}{2:2}".format(makeHex(rgbTuple[2]), makeHex(rgbTuple[1]), makeHex(rgbTuple[0]))
+def rgbToHex(rgbTuple_):
+    return "#{0:2}{1:2}{2:2}".format(makeHex(rgbTuple_[2]), makeHex(rgbTuple_[1]), makeHex(rgbTuple_[0]))
 
 #find and return the number corresponding to the hex code from the excel sheet
-def hexToTexture(hexValue, dictionary):
-    return dictionary.get(hexValue, "Unknown Hex Texture: " + hexValue)
+def hexToTexture(hexValue_, dictionary_):
+    return dictionary_.get(hexValue_, "Unknown Hex Texture: " + hexValue_)
 
 #read the excel sheet and populate the texture dictionary
-def setTextureDictionary(excel):
+def setTextureDictionary(excel_):
     dictionary = {}
-    workbook = xlrd.open_workbook(excel)
+    workbook = xlrd.open_workbook(excel_)
     sheet = workbook.sheet_by_index(0)
     for i in range(1, sheet.nrows):
         dictionary[sheet.cell_value(i, 2)] = int(sheet.cell_value(i, 1))
     return dictionary
 
 #loop through the pixels of the image and return an array containing the corresponding numbers to each hex code
-def generateData(image, excel):
-    dictionary = setTextureDictionary(excel)
+def generateData(image_, excel_):
+    dictionary = setTextureDictionary(excel_)
     print("Texture dictionary processed: " + str(dictionary))
-    data = cv2.imread(image)
+    data = cv2.imread(image_)
     height, width = data.shape[:2]
     pixelMap = []
     for row in range(height):
@@ -62,71 +62,93 @@ def generateData(image, excel):
     return pixelMap
 
 #create / write and clear the data to a file that is readable by the C++ side of my map interpreter 
-def writeToFile(path, data):
-    f = open(path, "w+")
-    for row in range(len(data)):
-        for column in range(len(data[row])):
-            if not column == len(data[row]) - 1:
-                f.write(str(data[row][column]) + " ")
+def writeToFile(path_, data_):
+    f = open(path_, "w+")
+    for row in range(len(data_)):
+        for column in range(len(data_[row])):
+            if not column == len(data_[row]) - 1:
+                f.write(str(data_[row][column]) + " ")
             else:
-                f.write(str(data[row][column]))
-        if not row == len(data) - 1:
+                f.write(str(data_[row][column]))
+        if not row == len(data_) - 1:
             f.write("\n")
     f.close()
 
+def checkPathValidity(path_, check_):
+    if path_ != "":
+        #determine if file/folder needs to be readable or writeable
+        write_or_read = os.R_OK
+        if check_ == "folder":
+            write_or_read = os.W_OK
+        elif check_ == "image":
+            if ".png" not in path_:
+                print("Image file path invalid. Please give a valid "".png"" image file path.")
+                return ""
+        elif check_ == "dictionary":
+            if ".xlsm" not in path_:
+                print("Excel file path invalid. Please give a valid "".xlsm"" excel file path.")
+                return ""
+        #check absolute paths
+        if not os.access(path_, write_or_read):
+            #check Drive:\Users\UserName home directory paths
+            if not os.access(HOME_DIR + "\\" + path_, write_or_read):
+                #check root directory paths (where the python program is run from)
+                if not os.access(ROOT_DIR + "\\" + path_, write_or_read):
+                    if check_ == "folder":
+                        if "\\" not in path_[:-1] and "." not in path_:
+                            #ask the user if they would like to create a new folder using input()[-1] to confirm
+                            if input("Would you like to generate a folder called \"" + path_ + "\" in \"" + ROOT_DIR + "\\\"? (y/n): ")[-1] == "y":
+                                path_ = ROOT_DIR + "\\" + path_
+                                os.mkdir(path_)
+                                print("Created \"" + path_ + "\" folder")
+                                return path_
+                    print("Path invalid.")
+                    return ""
+                else:
+                    path_ = ROOT_DIR + "\\" + path_
+            else:
+                path_ = HOME_DIR + "\\" + path_
+    return path_
+
 def runProgram(file_, folder_, image_, dictionary_):
 
-    if ("." in file_ and ".txt" not in file_) or "/" in file_ or "\\" in file_:
-        print("File name invalid. Please do not include file type such as "".docx"" in the end.")
+    if "." in file_ and ".txt" not in file_:
+        print("File name invalid. Please do not include file type such as \".docx\" in the end.")
         runProgram(input("Enter a name for the output file: "), "", "", "")
     
     if ".txt" not in file_:
         file_ += ".txt"
+
+    folder_ = checkPathValidity(folder_, "folder")
 
     if folder_ == "":
         runProgram(file_, input("Enter a location for the output file: "), "", "")
 
     if "/" in folder_:
         folder_.replace("/", "\\")
-    if folder_[-1] != "\\":
+
+    if "desktop" in folder_.lower() and "\\" not in folder_:
+        folder_ = HOME_DIR + "\\Desktop\\"
+
+    if folder_[-1] != "\\" and "\\" in  folder_:
         folder_ += "\\"
 
-    if not os.access(folder_, os.W_OK) and not os.access(HOME_DIR + "\\" + folder_, os.W_OK):
-        if "." in folder_:
-            print("Folder path invalid. Please do not include the file name in the end.")
-            runProgram(file_, "", "", "")
-        else:
-            #ask the user if they would like to create a new folder using input()[-1] to confirm
-            if input("Would you like to generate a folder called \"" + folder_[:-1] + "\" in \"" + HOME_DIR + "\\\"? (y/n): ")[-1] == "y":
-                print("Created \"" + HOME_DIR + "\\" + folder_ + "\" folder")
-                folder_ = HOME_DIR + "\\" + folder_
-                os.mkdir(folder_)
-            else:
-                print("Folder path invalid.")
-                runProgram(file_, "", "", "")
-    
-    #if path is in home dir, add that to the start, but not if is in the root
-    if HOME_DIR not in folder_ and ROOT_DIR not in folder_:
-        folder_ = HOME_DIR + "\\" + folder_
+    image_ = checkPathValidity(image_, "image")
 
     if image_ == "":
         runProgram(file_, folder_, input("Enter an image file path to read pixel data from: "), "")
-    if not ".png" in image_ or not Path(image_.replace("/", "\\")).is_file():
-        print("Image path invalid. Please give a valid "".png"" image file path.")
-        runProgram(file_, folder_, "", "")
+
+    dictionary_ = checkPathValidity(dictionary_, "dictionary")
 
     if dictionary_ == "":
         runProgram(file_, folder_, image_, input("Enter an excel file path to read color values from: "))
-    if not ".xlsm" in dictionary_ or not Path(dictionary_.replace("/", "\\")).is_file():
-        print("Excel file path invalid. Please give a valid "".xlsm"" excel file path.")
-        runProgram(file_, folder_, image_, "")
 
     data = generateData(image_, dictionary_)
     pyperclip.copy(str(data).replace("[", "{").replace("]", "}")) #convert python array to c++ form array with curly brackets
     print("Data copied to clipboard.")
     writeToFile(folder_ + file_, data)
-    print("File generated at " + folder_ + file_)
-    print("Thank you for using Martin and Nicole's Map Array Creator! :)")
+    print("Map file created at \"" + folder_ + file_ + "\"")
+    print()
     runProgram(input("Enter a name for the output file: "), "", "", "")
 
 runProgram(input("Enter a name for the output file: "), "", "", "")
