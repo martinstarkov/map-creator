@@ -1,4 +1,4 @@
-# map-creator
+# png-to-array
 Turn your .png files into tilemap data arrays for easy 2D level creation!
 
 # How to compile
